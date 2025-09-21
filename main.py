@@ -14,7 +14,7 @@ app = Flask(__name__, static_folder="frontend/dist")
 CORS(app, origins=[
     "http://localhost:5173",   # Vite default
     "http://localhost:8080",   # React dev server
-    "https://space-detection-ai.netlify.app/"  # replace with your Netlify/Vercel domain
+    "https://space-detection-ai.netlify.app"  # replace with your Netlify/Vercel domain
 ])
 
 # ---------------------------
@@ -128,4 +128,5 @@ def serve(path):
 # ---------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+
 
