@@ -11,16 +11,19 @@ import os
 # Create Flask app
 # ---------------------------
 app = Flask(__name__, static_folder="frontend/dist")
-CORS(app, origins=[
-    "http://localhost:5173",   # Vite default
-    "http://localhost:8080",   # React dev server
-    "https://space-detection-ai.netlify.app"  # replace with your Netlify/Vercel domain
-])
+
+# ---------------------------
+# Fix CORS properly
+# ---------------------------
+CORS(app, resources={r"/*": {"origins": [
+    "http://localhost:5173",       # Vite default
+    "http://localhost:8080",       # React dev server
+    "https://space-detection-ai.netlify.app"  # Netlify frontend
+]}})
 
 # ---------------------------
 # Load YOLO model
 # ---------------------------
-# Make sure last.pt is in the backend folder
 model = YOLO("last.pt")
 
 # ---------------------------
@@ -47,15 +50,12 @@ def predict():
         return jsonify({"success": False, "error": "Empty filename"}), 400
 
     try:
-        # Read and convert image
         img_bytes = file.read()
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
         img_np = np.array(img)
 
-        # Run YOLO prediction
         results = model.predict(img_np, imgsz=640, conf=0.25, device="cpu")
 
-        # Prepare drawing
         draw = ImageDraw.Draw(img)
         try:
             font = ImageFont.truetype("arial.ttf", 20)
@@ -69,24 +69,20 @@ def predict():
             for box in result.boxes:
                 cls_id = int(box.cls)
                 conf = float(box.conf)
-                bbox = box.xyxy.tolist()[0]  # [x1, y1, x2, y2]
+                bbox = box.xyxy.tolist()[0]
                 cls_name = model.names[cls_id]
 
-                # Update counts
                 detection_counts[cls_name] = detection_counts.get(cls_name, 0) + 1
 
-                # Store detection details
                 detections.append({
                     "class": cls_name,
                     "confidence": round(conf, 3),
                     "bbox": [round(x, 2) for x in bbox]
                 })
 
-                # Draw bounding box + label
                 draw.rectangle(bbox, outline="red", width=3)
                 text = f"{cls_name} {conf:.2f}"
 
-                # Use textbbox() instead of textsize()
                 text_bbox = draw.textbbox((0, 0), text, font=font)
                 text_w = text_bbox[2] - text_bbox[0]
                 text_h = text_bbox[3] - text_bbox[1]
@@ -97,12 +93,10 @@ def predict():
                 )
                 draw.text((bbox[0], bbox[1]-text_h), text, fill="white", font=font)
 
-        # Convert annotated image to base64
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format="JPEG")
         img_base64 = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
 
-        # Return JSON
         return jsonify({
             "success": True,
             "image": img_base64,
@@ -128,5 +122,3 @@ def serve(path):
 # ---------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-
-
