@@ -10,7 +10,8 @@ import os
 # ---------------------------
 # Create Flask app
 # ---------------------------
-app = Flask(__name__, static_folder="frontend/dist")
+
+app = Flask(__name__, static_folder="../dist")
 
 # ---------------------------
 # Fix CORS properly
@@ -122,3 +123,4 @@ def serve(path):
 # ---------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+
